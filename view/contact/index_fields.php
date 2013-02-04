@@ -11,13 +11,6 @@ $user = array();
 if (isset($data['user'])) {
     $user = $data['user'];
 }
-if (!empty($data['more_infos'])) {
-?>
-    <input type="hidden" name="champ_more_infos" id="champ_more_infos" value="<?php
-    echo $data['more_infos'];
-    ?>" />
-<?php
-}
 if ($conf['champ_nom']) {
 ?>
 <div>
@@ -244,7 +237,7 @@ if ($conf['champ_fax']) {
 if ($conf['champ_email']) {
 ?>
 <div>
-    <label><span class="label_text" id="label_email">E-mail</span>
+    <label><span class="label_text" id="label_email">Email</span>
 <?php
     if ($conf['champ_email_required']) {
 ?>
@@ -275,22 +268,19 @@ if ($conf['champ_message']) {
     }
 ?>
     </label>
-    <textarea name="champ_message" id="champ_message" rows="6"><?php
-    if (isset($data['base_message'])) {
-        echo str_replace('\n', "\n", $data['base_message']);
-    }
-    ?></textarea>
+    <textarea name="champ_message" id="champ_message" rows="6"></textarea>
 </div>
 <?php
 }
 ?>
 <?php
 if ($conf['recaptcha']) {
+    $request = $this->getRequest();
 ?>
 <div>
     <script type="text/javascript">
     var RecaptchaOptions = {
-        lang : '<?php echo $request->LANG; ?>',
+        lang : '<?php echo $request['LANG']; ?>',
             theme : 'white'
     };
     </script>
