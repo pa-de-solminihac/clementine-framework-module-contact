@@ -1,6 +1,3 @@
-<?php
-$ns = $this->getModel('fonctions');
-?>
 Bonjour,<br />
 <br />
 Vous avez reçu le message suivant depuis votre site :<br />
@@ -42,18 +39,6 @@ if ($data['conf']['champ_email']) {
 }
 ?>
 </p>
-<?php
-if ($data['conf']['champ_more_infos'] && $data['donnees']['champ_more_infos']) {
-?>
-<p>
-<strong>Informations complémentaires</strong><br />
-<?php
-    echo $ns->strip_tags(urldecode(base64_decode($data['donnees']['champ_more_infos'])), '<a><br>');
-?>
-</p>
-<?php
-}
-?>
 <p>
 <strong>Message de l'internaute</strong><br />
 <?php
