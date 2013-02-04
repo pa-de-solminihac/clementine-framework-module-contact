@@ -11,16 +11,12 @@ $user = array();
 if (isset($data['user'])) {
     $user = $data['user'];
 }
-if (!empty($data['more_infos'])) {
-?>
-    <input type="hidden" name="champ_more_infos" id="champ_more_infos" value="<?php
-    echo $data['more_infos'];
-    ?>" />
-<?php
-}
 if ($conf['champ_nom']) {
 ?>
 <div>
+    <input type="hidden" name="champ_more_infos" id="champ_more_infos" value="<?php
+    echo $data['more_infos'];
+    ?>" />
     <label><span class="label_text" id="label_nom">Nom</span>
 <?php
     if ($conf['champ_nom_required']) {
