@@ -1,20 +1,17 @@
 <?php
-if (!isset($data['class'])) {
-    $data['class'] = 'contact';
-}
 $conf = '';
-if (isset($data['config_module_' . $data['class']])) {
-    $conf = $data['config_module_' . $data['class']];
+if (isset($data['config_module_contact'])) {
+    $conf = $data['config_module_contact'];
 }
 // par défaut
 if (!$conf) {
-    $conf = Clementine::$config['module_' . $data['class']];
+    $conf = Clementine::$config['module_contact'];
 }
 ?>
 <script type="text/javascript">
     // si jQuery est chargé
     if (typeof(jQuery) != "undefined") {
-        jQuery('body').delegate('#form_<?php echo $data['class']; ?>', 'submit', function() {
+        jQuery('body').delegate('#form_contact', 'submit', function() {
             var msg = "";
             jQuery(this).find('label > span.required').each(function() {
                 // console.log(jQuery(this).parent().children('span.label_text').text());

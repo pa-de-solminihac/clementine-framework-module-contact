@@ -44,15 +44,6 @@ class contactContactController extends contactContactController_Parent
             }
         }
         $this->data['class']   = $class;
-        $ns = $this->getModel('fonctions');
-        $this->data['more_infos'] = '';
-        if (isset($request->GET['more_infos'])) {
-            $this->data['more_infos'] = $ns->htmlentities($request->GET['more_infos']);
-        }
-        $this->data['base_message'] = '';
-        if (isset($request->GET['base_message'])) {
-            $this->data['base_message'] = $ns->htmlentities($request->GET['base_message']);
-        }
         $this->data['config_module_contact'] = $conf;
         if ($conf['recaptcha']) {
             if ($conf['recaptcha_publickey']) {
@@ -96,7 +87,7 @@ class contactContactController extends contactContactController_Parent
         }
         $ns = $this->getModel('fonctions');
         if (!empty($_POST)) {
-            // récupération des données postées : seulement si le champ est autorise
+            // récupération des données postées
             $donnees = array();
             foreach ($conf as $key => $val) {
                 if ((substr($key, 0, 6) == 'champ_') && (substr($key, -9) != '_required') && $key != 'champ_required') {
@@ -110,21 +101,15 @@ class contactContactController extends contactContactController_Parent
             $tout_valide = !count($errors);
             // Traitement si tout est valide
             $nberrors = 0;
-            $url_retour = __WWW__ . '/' . $class;
-            if (!empty($params['url_retour'])) {
-                $url_retour = $params['url_retour'];
-            }
             if (!$tout_valide) {
                 $error = 1;
-                $url_retour .= '?message=' . $error;
-                $ns->redirect($url_retour);
+                $ns->redirect(__WWW__ . '/contact?message=' . $error);
             } else {
                 $data = array('donnees' => $donnees, 'conf' => $conf, 'class' => $class);
                 $contenu = $this->getBlockHtml($class . '/mail_to_site', $data);
                 $destinataires = $data['conf']['email_prod'];
                 $error = $this->sendmails($contenu, $destinataires, $data);
-                $url_retour .= '?message=' . $error;
-                $ns->redirect($url_retour);
+                $ns->redirect(__WWW__ . '/contact?message=' . $error);
             }
         }
     }
@@ -154,10 +139,9 @@ class contactContactController extends contactContactController_Parent
         $errors = array();
         // validation minimale pour tous les champs requis
         foreach ($conf as $key => $val) {
-            $nom_champ = substr($key, 6, -9);
-            if ((substr($key, 0, 6) == 'champ_') && (substr($key, -9) == '_required') && strlen($nom_champ)) {
+            if ((substr($key, 0, 6) == 'champ_') && (substr($key, -9) == '_required') && $key != 'champ_required') {
                 if ($val) {
-                    if (!strlen($donnees['champ_' . $nom_champ])) {
+                    if (!strlen($donnees['champ_nom'])) {
                         $errors[] = $key;
                     }
                 }
