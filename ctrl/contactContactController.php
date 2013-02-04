@@ -19,7 +19,7 @@ class contactContactController extends contactContactController_Parent
      * @access public
      * @return void
      */
-    public function indexAction($request)
+    public function indexAction()
     {
         $conf = $this->getModuleConfig();
         if (!$conf) {
@@ -38,21 +38,10 @@ class contactContactController extends contactContactController_Parent
             $this->data['user'] = array();
             if ($auth) {
                 $this->data['user'] = array_merge($this->data['user'], $auth);
-                if ($adresse) {
-                    $this->data['user'] = array_merge($this->data['user'], $adresse);
-                }
+                $this->data['user'] = array_merge($this->data['user'], $adresse);
             }
         }
         $this->data['class']   = $class;
-        $ns = $this->getModel('fonctions');
-        $this->data['more_infos'] = '';
-        if (isset($request->GET['more_infos'])) {
-            $this->data['more_infos'] = $ns->htmlentities($request->GET['more_infos']);
-        }
-        $this->data['base_message'] = '';
-        if (isset($request->GET['base_message'])) {
-            $this->data['base_message'] = $ns->htmlentities($request->GET['base_message']);
-        }
         $this->data['config_module_contact'] = $conf;
         if ($conf['recaptcha']) {
             if ($conf['recaptcha_publickey']) {
@@ -70,7 +59,7 @@ class contactContactController extends contactContactController_Parent
      * @access public
      * @return void
      */
-    public function postAction($request, $params = null)
+    public function postAction($params = null)
     {
         $class = strtolower(substr(get_class($this), 0, -10));
         $conf = $this->getModuleConfig();
@@ -96,7 +85,7 @@ class contactContactController extends contactContactController_Parent
         }
         $ns = $this->getModel('fonctions');
         if (!empty($_POST)) {
-            // récupération des données postées : seulement si le champ est autorise
+            // récupération des données postées
             $donnees = array();
             foreach ($conf as $key => $val) {
                 if ((substr($key, 0, 6) == 'champ_') && (substr($key, -9) != '_required') && $key != 'champ_required') {
@@ -110,21 +99,16 @@ class contactContactController extends contactContactController_Parent
             $tout_valide = !count($errors);
             // Traitement si tout est valide
             $nberrors = 0;
-            $url_retour = __WWW__ . '/' . $class;
-            if (!empty($params['url_retour'])) {
-                $url_retour = $params['url_retour'];
-            }
             if (!$tout_valide) {
                 $error = 1;
-                $url_retour .= '?message=' . $error;
-                $ns->redirect($url_retour);
+                $ns->redirect(__WWW__ . '/contact?message=' . $error);
             } else {
                 $data = array('donnees' => $donnees, 'conf' => $conf, 'class' => $class);
                 $contenu = $this->getBlockHtml($class . '/mail_to_site', $data);
+                $titre = 'Demande de contact (site ' . Clementine::$config['clementine_global']['site_name'] . ')';
                 $destinataires = $data['conf']['email_prod'];
-                $error = $this->sendmails($contenu, $destinataires, $data);
-                $url_retour .= '?message=' . $error;
-                $ns->redirect($url_retour);
+                $error = $this->sendmails($titre, $contenu, $destinataires, $data);
+                $ns->redirect(__WWW__ . '/contact?message=' . $error);
             }
         }
     }
@@ -154,10 +138,9 @@ class contactContactController extends contactContactController_Parent
         $errors = array();
         // validation minimale pour tous les champs requis
         foreach ($conf as $key => $val) {
-            $nom_champ = substr($key, 6, -9);
-            if ((substr($key, 0, 6) == 'champ_') && (substr($key, -9) == '_required') && strlen($nom_champ)) {
+            if ((substr($key, 0, 6) == 'champ_') && (substr($key, -9) == '_required') && $key != 'champ_required') {
                 if ($val) {
-                    if (!strlen($donnees['champ_' . $nom_champ])) {
+                    if (!strlen($donnees['champ_nom'])) {
                         $errors[] = $key;
                     }
                 }
@@ -200,7 +183,7 @@ class contactContactController extends contactContactController_Parent
             }
         }
         if ($conf['champ_tel_required']) {
-            if (!(strlen($donnees['champ_tel']) >= 2)) {
+            if (!(strlen($donnees['champ_telephone']) >= 2)) {
                 $errors[] = 'tél';
             }
         }
@@ -216,7 +199,7 @@ class contactContactController extends contactContactController_Parent
         }
         if ($conf['champ_email_required']) {
             if (!$ns->est_email($donnees['champ_email'])) {
-                $errors[] = 'e-mail';
+                $errors[] = 'email';
             }
         }
         if ($conf['champ_message_required']) {
@@ -238,17 +221,14 @@ class contactContactController extends contactContactController_Parent
         return array_unique($errors);
     }
 
-    public function sendmails($contenu, $destinataires, $params, $titre = null, $titre_confirmation = null)
+    public function sendmails($titre, $contenu, $destinataires, $params)
     {
         $ns = $this->getModel('fonctions');
         $destinataires = explode(',', $destinataires);
         // si au moins un mail est parti, on considere que le mail est bien parti : error = 2
         $error = 1;
-        $nom    = $ns->html_entity_decode($params['donnees']['champ_nom'], ENT_QUOTES);
-        $prenom = $ns->html_entity_decode($params['donnees']['champ_prenom'], ENT_QUOTES);
-        if ($titre === null) {
-            $titre = Clementine::$config['clementine_global']['site_name'] . ' : demande de contact';
-        }
+        $nom    = $ns->remove_accents($ns->html_entity_decode($params['donnees']['champ_nom']));
+        $prenom = $ns->remove_accents($ns->html_entity_decode($params['donnees']['champ_prenom']));
         foreach ($destinataires as $destinataire) {
             if ($ns->envoie_mail($destinataire,
                                  $params['donnees']['champ_email'], $nom . ' ' . $prenom,
@@ -256,21 +236,6 @@ class contactContactController extends contactContactController_Parent
                                  $ns->strip_tags($contenu),
                                  $contenu)) {
                 $error = 2;
-            }
-        }
-        // envoie du mail de confirmation si le message a bien été envoyé
-        if ($error == 2 && $params['conf']['envoyer_confirmation']) {
-            if ($titre_confirmation === null) {
-                $titre_confirmation = Clementine::$config['clementine_global']['site_name'] . ' : confirmation de contact';
-            }
-            $class = strtolower(substr(get_class($this), 0, -10));
-            $contenu_confirmation = $this->getBlockHtml($class . '/mail_confirmation');
-            if ($params['conf']['email_confirmation']) {
-                $ns->envoie_mail($params['donnees']['champ_email'],
-                                 $params['conf']['email_confirmation'], Clementine::$config['clementine_global']['site_name'],
-                                 $titre_confirmation,
-                                 $ns->strip_tags($contenu_confirmation),
-                                 $contenu_confirmation);
             }
         }
         return $error;

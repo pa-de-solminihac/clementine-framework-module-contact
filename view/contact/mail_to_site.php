@@ -1,8 +1,14 @@
-<html><head><style type="text/css"><!--
+<html>
+    <head>
+        <title>Demande de contact (site <?php echo Clementine::$config['clementine_global']['site_name']; ?>)</title>
+        <style type="text/css">
             body {
                 font-family: Arial;
             }
---></style></head><body><?php
+        </style>
+    </head>
+    <body>
+<?php
 if (!isset($data['class'])) {
     $data['class'] = 'contact';
 }
