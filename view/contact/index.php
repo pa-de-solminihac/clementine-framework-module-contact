@@ -2,10 +2,10 @@
 if (!isset($data['class'])) {
     $data['class'] = 'contact';
 }
-$this->getModel('cssjs')->register_foot('clementine_' . $data['class'] . '-submit', $this->getBlockHtml($data['class'] . '/js_submit', $data));
+$this->getModel('cssjs')->register_foot('clementine_contact-submit', $this->getBlockHtml($data['class'] . '/js_submit', $data));
 $conf = '';
-if (isset($data['config_module_' . $data['class']])) {
-    $conf = $data['config_module_' . $data['class']];
+if (isset($data['config_module_contact'])) {
+    $conf = $data['config_module_contact'];
 }
 // par défaut
 if (!$conf) {
@@ -34,7 +34,7 @@ if ($ns->ifSet('message', 'get')) {
 <?php
 } else {
 ?>
-    <form id="form_<?php echo $data['class']; ?>" name="form_<?php echo $data['class']; ?>" class="form_contact form_<?php echo $data['class']; ?>" action="<?php echo __WWW__; ?>/<?php echo $data['class']; ?>/post" method="post" accept-charset="utf-8">
+    <form id="form_contact" name="form_contact" class="form_contact" action="<?php echo __WWW__; ?>/<?php echo $data['class']; ?>/post" method="post" accept-charset="utf-8">
 <?php
     $this->getBlock($data['class'] . '/index_fields', $data);
 ?>
