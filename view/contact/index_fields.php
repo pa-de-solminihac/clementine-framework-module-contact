@@ -1,12 +1,5 @@
 <?php
-$conf = '';
-if (isset($data['config_module_contact'])) {
-    $conf = $data['config_module_contact'];
-}
-// par défaut
-if (!$conf) {
-    $conf = Clementine::$config['module_contact'];
-}
+$conf = $data['conf'];
 $user = array();
 if (isset($data['user'])) {
     $user = $data['user'];
@@ -282,33 +275,5 @@ if ($conf['champ_message']) {
     ?></textarea>
 </div>
 <?php
-}
-?>
-<?php
-if ($conf['recaptcha']) {
-?>
-<div>
-    <script type="text/javascript">
-    var RecaptchaOptions = {
-        lang : '<?php echo $request->LANG; ?>',
-            theme : 'white'
-    };
-    </script>
-<?php
-    require_once(__FILES_ROOT_CONTACT__ . '/lib/recaptchalib.php');
-    $publickey = $conf['recaptcha_publickey']; // you got this from the signup page
-    echo recaptcha_get_html($publickey);
-?>
-</div>
-<?php
-}
-?>
-<div>
-    <label>&nbsp;</label>
-    <input type="submit" value="Envoyer" class="bt_envoyer_form" />
-</div>
-<?php
-if ($conf['legende_champs_obligatoires']) {
-    echo $conf['legende_champs_obligatoires'];
 }
 ?>
