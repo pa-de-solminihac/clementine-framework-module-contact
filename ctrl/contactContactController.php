@@ -27,12 +27,12 @@ class contactContactController extends contactContactController_Parent
         }
         $class = strtolower(substr(get_class($this), 0, -10));
         // charge les infos sur l'utilisateur si necessaire
-        if ($this->canGetModel('users')) {
-            $auth = $this->getModel('users')->getAuth();
+        if (Clementine::canGetModel('users')) {
+            $auth = Clementine::getModel('users')->getAuth();
             $adresse = array();
             if ($auth) {
-                if ($this->canGetModel('adresse')) {
-                    $adresse = $this->getModel('adresse')->getAdresseByUserId($auth['id']);
+                if (Clementine::canGetModel('adresse')) {
+                    $adresse = Clementine::getModel('adresse')->getAdresseByUserId($auth['id']);
                 }
             }
             $this->data['user'] = array();
@@ -44,7 +44,7 @@ class contactContactController extends contactContactController_Parent
             }
         }
         $this->data['class']   = $class;
-        $ns = $this->getModel('fonctions');
+        $ns = Clementine::getModel('fonctions');
         $this->data['more_infos'] = '';
         if (isset($request->GET['more_infos'])) {
             $this->data['more_infos'] = $ns->htmlentities($request->GET['more_infos']);
@@ -94,7 +94,7 @@ class contactContactController extends contactContactController_Parent
                 $conf['email_prod'] = Clementine::$config['clementine_global']['email_prod'];
             }
         }
-        $ns = $this->getModel('fonctions');
+        $ns = Clementine::getModel('fonctions');
         if (!empty($_POST)) {
             // récupération des données postées : seulement si le champ est autorise
             $donnees = array();
@@ -120,7 +120,7 @@ class contactContactController extends contactContactController_Parent
                 $ns->redirect($url_retour);
             } else {
                 $data = array('donnees' => $donnees, 'conf' => $conf, 'class' => $class);
-                $contenu = $this->getBlockHtml($class . '/mail_to_site', $data);
+                $contenu = Clementine::getBlockHtml($class . '/mail_to_site', $data);
                 $destinataires = $data['conf']['email_prod'];
                 $error = $this->sendmails($contenu, $destinataires, $data);
                 $url_retour .= '?message=' . $error;
@@ -131,7 +131,7 @@ class contactContactController extends contactContactController_Parent
 
     public function sanitize($donnees)
     {
-        $ns = $this->getModel('fonctions');
+        $ns = Clementine::getModel('fonctions');
         $donnees_propres = array();
         foreach ($donnees as $key => $val) {
             $donnees_propres[$key] = trim($ns->strip_tags($val));
@@ -144,7 +144,7 @@ class contactContactController extends contactContactController_Parent
 
     public function validate($donnees, $conf = null)
     {
-        $ns = $this->getModel('fonctions');
+        $ns = Clementine::getModel('fonctions');
         if (!$conf) {
             $conf = $this->getModuleConfig();
             if (!$conf) {
@@ -240,7 +240,7 @@ class contactContactController extends contactContactController_Parent
 
     public function sendmails($contenu, $destinataires, $params, $titre = null, $titre_confirmation = null)
     {
-        $ns = $this->getModel('fonctions');
+        $ns = Clementine::getModel('fonctions');
         $destinataires = explode(',', $destinataires);
         // si au moins un mail est parti, on considere que le mail est bien parti : error = 2
         $error = 1;
@@ -264,7 +264,7 @@ class contactContactController extends contactContactController_Parent
                 $titre_confirmation = Clementine::$config['clementine_global']['site_name'] . ' : confirmation de contact';
             }
             $class = strtolower(substr(get_class($this), 0, -10));
-            $contenu_confirmation = $this->getBlockHtml($class . '/mail_confirmation');
+            $contenu_confirmation = Clementine::getBlockHtml($class . '/mail_confirmation');
             if ($params['conf']['email_confirmation']) {
                 $ns->envoie_mail($params['donnees']['champ_email'],
                                  $params['conf']['email_confirmation'], Clementine::$config['clementine_global']['site_name'],
