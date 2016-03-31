@@ -13,6 +13,27 @@
  */
 class contactContactController extends contactContactController_Parent
 {
+
+    public function __construct($request, $params = null)
+    {
+        $class = strtolower(substr(get_class($this), 0, -10));
+        $this->data['class']   = $class;
+        $conf = $this->getModuleConfig();
+        if (!$conf) {
+            $conf = Clementine::$config['module_' . $class];
+        }
+        if ($conf['recaptcha']) {
+            $this->getModel('cssjs')->register_js('recaptcha', array('src' => 'https://www.google.com/recaptcha/api.js'));
+            if (!$conf['recaptcha_publickey']) {
+                $this->trigger_error('configuration incomplete : [contact]recaptcha_publickey', E_USER_WARNING);
+            }
+            if (!$conf['recaptcha_privatekey']) {
+                $this->trigger_error('configuration incomplete : [contact]recaptcha_privatekey', E_USER_WARNING);
+            }
+        }
+        $this->data['config_module_contact'] = $conf;
+    }
+
     /**
      * indexAction : controleur de la page contact du site
      * 
@@ -21,11 +42,6 @@ class contactContactController extends contactContactController_Parent
      */
     public function indexAction($request)
     {
-        $conf = $this->getModuleConfig();
-        if (!$conf) {
-            $conf = Clementine::$config['module_contact'];
-        }
-        $class = strtolower(substr(get_class($this), 0, -10));
         // charge les infos sur l'utilisateur si necessaire
         if ($this->canGetModel('users')) {
             $auth = $this->getModel('users')->getAuth();
@@ -43,7 +59,6 @@ class contactContactController extends contactContactController_Parent
                 }
             }
         }
-        $this->data['class']   = $class;
         $ns = $this->getModel('fonctions');
         $this->data['more_infos'] = '';
         if (isset($request->GET['more_infos'])) {
@@ -52,15 +67,6 @@ class contactContactController extends contactContactController_Parent
         $this->data['base_message'] = '';
         if (isset($request->GET['base_message'])) {
             $this->data['base_message'] = $ns->htmlentities($request->GET['base_message']);
-        }
-        $this->data['config_module_contact'] = $conf;
-        if ($conf['recaptcha']) {
-            if ($conf['recaptcha_publickey']) {
-                echo 'configuration incomplete : [contact]recaptcha_publickey<br />';
-            }
-            if ($conf['recaptcha_privatekey']) {
-                echo 'configuration incomplete : [contact]recaptcha_privatekey<br />';
-            }
         }
     }
 
@@ -72,21 +78,7 @@ class contactContactController extends contactContactController_Parent
      */
     public function postAction($request, $params = null)
     {
-        $class = strtolower(substr(get_class($this), 0, -10));
-        $conf = $this->getModuleConfig();
-        if (!$conf) {
-            $conf = Clementine::$config['module_' . $class];
-        }
-        $this->data['class']   = $class;
-        $this->data['config_module_contact'] = $conf;
-        if ($conf['recaptcha']) {
-            if ($conf['recaptcha_publickey']) {
-                echo 'configuration incomplete : [contact]recaptcha_publickey<br />';
-            }
-            if ($conf['recaptcha_privatekey']) {
-                echo 'configuration incomplete : [contact]recaptcha_privatekey<br />';
-            }
-        }
+        $conf = $this->data['config_module_contact'];
         if (isset($params['email_prod'])) {
             $conf['email_prod'] = $params['email_prod'];
         } else {
@@ -95,7 +87,7 @@ class contactContactController extends contactContactController_Parent
             }
         }
         $ns = $this->getModel('fonctions');
-        if (!empty($_POST)) {
+        if (!empty($request->POST)) {
             // récupération des données postées : seulement si le champ est autorise
             $donnees = array();
             foreach ($conf as $key => $val) {
@@ -105,31 +97,45 @@ class contactContactController extends contactContactController_Parent
                     }
                 }
             }
-            $donnees = $this->sanitize($donnees);
-            $errors = $this->validate($donnees, $conf);
+            $donnees = $this->sanitize($donnees, $conf, $request);
+            $errors = $this->validate($donnees, $conf, $request);
             $tout_valide = !count($errors);
             // Traitement si tout est valide
             $nberrors = 0;
-            $url_retour = __WWW__ . '/' . $class;
+            $url_retour = __WWW__ . '/' . $this->data['class'];
             if (!empty($params['url_retour'])) {
                 $url_retour = $params['url_retour'];
             }
             if (!$tout_valide) {
                 $error = 1;
                 $url_retour .= '?message=' . $error;
-                $ns->redirect($url_retour);
+                if ($request->AJAX) {
+                    echo '1';
+                    echo json_encode($errors, JSON_FORCE_OBJECT);
+                    // pas un dontGetBlock ici car on ne veut pas que du code s'exécute après
+                    die();
+                } else {
+                    $ns->redirect($url_retour);
+                }
             } else {
-                $data = array('donnees' => $donnees, 'conf' => $conf, 'class' => $class);
-                $contenu = $this->getBlockHtml($class . '/mail_to_site', $data);
+                $data = array('donnees' => $donnees, 'conf' => $conf, 'class' => $this->data['class']);
+                $contenu = $this->getBlockHtml($this->data['class'] . '/mail_to_site', $data);
                 $destinataires = $data['conf']['email_prod'];
                 $error = $this->sendmails($contenu, $destinataires, $data);
                 $url_retour .= '?message=' . $error;
-                $ns->redirect($url_retour);
+                if ($request->AJAX) {
+                    echo '2';
+                    echo $url_retour;
+                    // pas un dontGetBlock ici car on ne veut pas que du code s'exécute après
+                    die();
+                } else {
+                    $ns->redirect($url_retour);
+                }
             }
         }
     }
 
-    public function sanitize($donnees)
+    public function sanitize($donnees, $conf = null, $request = null)
     {
         $ns = $this->getModel('fonctions');
         $donnees_propres = array();
@@ -142,15 +148,10 @@ class contactContactController extends contactContactController_Parent
         return $donnees_propres;
     }
 
-    public function validate($donnees, $conf = null)
+    public function validate($donnees, $conf = null, $request = null)
     {
         $ns = $this->getModel('fonctions');
-        if (!$conf) {
-            $conf = $this->getModuleConfig();
-            if (!$conf) {
-                $conf = Clementine::$config['module_' . $class];
-            }
-        }
+        $conf = $this->data['config_module_contact'];
         $errors = array();
         // validation minimale pour tous les champs requis
         foreach ($conf as $key => $val) {
@@ -225,13 +226,22 @@ class contactContactController extends contactContactController_Parent
             }
         }
         if ($conf['recaptcha']) {
-            require_once(__FILES_ROOT_CONTACT__ . '/lib/recaptchalib.php');
             $privatekey = $conf['recaptcha_privatekey'];
-            $resp = recaptcha_check_answer($privatekey,
-                                            $_SERVER["REMOTE_ADDR"],
-                                            $_POST["recaptcha_challenge_field"],
-                                            $_POST["recaptcha_response_field"]);
-            if (!$resp->is_valid) {
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_URL, 'https://www.google.com/recaptcha/api/siteverify');
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, array(
+                'secret' => $privatekey,
+                'remoteip' => $request->SERVER['REMOTE_ADDR'],
+                'response' => $request->POST['g-recaptcha-response'],
+            ));
+            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 1);
+            $response = curl_exec($ch);
+            $resp = json_decode($response);
+            if (!$resp->success) {
                 $errors[] = 'captcha';
             }
         }
@@ -263,8 +273,7 @@ class contactContactController extends contactContactController_Parent
             if ($titre_confirmation === null) {
                 $titre_confirmation = Clementine::$config['clementine_global']['site_name'] . ' : confirmation de contact';
             }
-            $class = strtolower(substr(get_class($this), 0, -10));
-            $contenu_confirmation = $this->getBlockHtml($class . '/mail_confirmation');
+            $contenu_confirmation = $this->getBlockHtml($this->data['class'] . '/mail_confirmation');
             if ($params['conf']['email_confirmation']) {
                 $ns->envoie_mail($params['donnees']['champ_email'],
                                  $params['conf']['email_confirmation'], Clementine::$config['clementine_global']['site_name'],
@@ -277,4 +286,3 @@ class contactContactController extends contactContactController_Parent
     }
 
 }
-?>

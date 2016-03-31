@@ -1,19 +1,14 @@
 <?php
 if ($data['conf']['recaptcha']) {
 ?>
-<div>
+<div class="form-group">
     <script type="text/javascript">
     var RecaptchaOptions = {
         lang : '<?php echo $request->LANG; ?>',
             theme : 'white'
     };
     </script>
-<?php
-    require_once(__FILES_ROOT_CONTACT__ . '/lib/recaptchalib.php');
-    $publickey = $data['conf']['recaptcha_publickey']; // you got this from the signup page
-    echo recaptcha_get_html($publickey);
-?>
 </div>
+<div class="form-group g-recaptcha" data-sitekey="<?php echo $data['conf']['recaptcha_publickey']; ?>" style="height: 78px"></div>
 <?php
 }
-?>

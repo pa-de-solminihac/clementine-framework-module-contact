@@ -1,4 +1,5 @@
 <?php
+$err = $request->get('int', 'message');
 if (!isset($data['class'])) {
     $data['class'] = 'contact';
 }
@@ -11,11 +12,9 @@ if (isset($data['config_module_' . $data['class']])) {
 if (!$data['conf']) {
     $data['conf'] = Clementine::$config['module_' . $data['class']];
 }
-$ns = $this->getModel('fonctions');
-if ($ns->ifSet('message', 'get')) {
+if ($err) {
 ?>
 <?php
-    $err = $ns->ifGet('int', 'message');
     $message = '';
     switch ($err) {
         case 1 :
@@ -34,7 +33,13 @@ if ($ns->ifSet('message', 'get')) {
 <?php
 } else {
 ?>
-    <form id="form_<?php echo $data['class']; ?>" name="form_<?php echo $data['class']; ?>" class="form_contact form_<?php echo $data['class']; ?>" action="<?php echo __WWW__; ?>/<?php echo $data['class']; ?>/post" method="post" accept-charset="utf-8">
+    <form
+        id="form_<?php echo $data['class']; ?>"
+        name="form_<?php echo $data['class']; ?>"
+        class="form_contact form_<?php echo $data['class']; ?> form-horizontal"
+        action="<?php echo __WWW__; ?>/<?php echo $data['class']; ?>/post"
+        method="post"
+        accept-charset="utf-8">
 <?php
     $this->getBlock($data['class'] . '/index_fields', $data, $request);
     $this->getBlock($data['class'] . '/index_captcha', $data, $request);
